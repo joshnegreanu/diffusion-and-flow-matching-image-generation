@@ -20,15 +20,11 @@ ConvolutionalUNet
 	denoising images in diffusion/flow matching models.
 """
 class ConvolutionalUNet(nn.Module):
-
 	"""
 	ConvolutionalUNet.__init__
 		Constructs necessary internal modules for
 		encoder/decoder model. Uses convolutional layers and
 		skip connections for per-pixel predictions.
-
-	Args:
-		...
 	"""
 	def __init__(self):
 		super().__init__()
@@ -59,7 +55,19 @@ class ConvolutionalUNet(nn.Module):
 		# output layer
 		self.final_conv = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1, stride=1)
 		
-		
+	
+	"""
+	ConvolutionalUNet.double_conv
+		Creates a double convolutional layer block with
+		intermediary ReLU activations.
+	
+	Args:
+		in_channels: int, number of input channels
+		out_channels: int, number of output channels
+	
+	Returns:
+		nn.Sequential block with two convolutional layers
+	"""
 	def double_conv(self, in_channels, out_channels):
 		return nn.Sequential(
 			nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, padding=1),
@@ -94,13 +102,13 @@ class ConvolutionalUNet(nn.Module):
 		dec1 = self.dec_conv1(torch.cat((up1, enc4), dim=1)) # 32x32
 		
 		up2 = self.up_conv2(dec1)
-		dec2 = self.dec_conv2(torch.cat((up2, enc3), dim=1)) # 32x32
+		dec2 = self.dec_conv2(torch.cat((up2, enc3), dim=1)) # 64x64
 		
 		up3 = self.up_conv3(dec2)
-		dec3 = self.dec_conv3(torch.cat((up3, enc2), dim=1)) # 32x32
+		dec3 = self.dec_conv3(torch.cat((up3, enc2), dim=1)) # 128x128
 		
 		up4 = self.up_conv4(dec3)
-		dec4 = self.dec_conv4(torch.cat((up4, enc1), dim=1)) # 32x32
+		dec4 = self.dec_conv4(torch.cat((up4, enc1), dim=1)) # 256x256
 		
 		# output layer
 		return self.final_conv(dec4)
