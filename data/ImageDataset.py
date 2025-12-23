@@ -41,11 +41,14 @@ class ImageDataset(Dataset):
         """
         dataset = load_dataset(dataset_name, split='train')
 
+        # run through transformation pipeline
         transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((image_size, image_size)),
             torchvision.transforms.ToTensor()
         ])
-        self.data = [transform(x['image']) for x in random.sample(list(dataset), max_examples)]
+
+        # normalize image to [-1, 1]
+        self.data = [(transform(x['image']).float() - 0.5) * 2.0 for x in random.sample(list(dataset), max_examples)]
         print("[dataset] loaded")
 
         self.image_size = image_size
@@ -72,10 +75,7 @@ class ImageDataset(Dataset):
         torch.Tensor 
     """
     def __getitem__(self, idx):
-        # normalize image to [0, 1]
-        img = self.data[idx]
-        img = torch.tensor(img).permute(2, 0, 1).float() / 255.0
-        return img
+        return self.data[idx]
 
 
     """
