@@ -36,12 +36,14 @@ Training and model configurations.
 Can be changed prior to training.
 """
 train_config = {
-    'max_examples': 100,
-    'image_size': 256,
-    'bs': 32,
+    'max_examples': 1000,
+    'image_size': 32,
+    'num_channels': 1,
+    'bs': 16,
     'lr': 0.0001,
     'weight_decay': 0.000001,
-    'max_epochs': 10
+    'max_epochs': 10,
+    'diffusion_scheduler': math.sqrt
 }
 
 model_config = {}
@@ -57,10 +59,10 @@ dry_run
         bs: int batch size
         image_size: int size of vocab
 """
-def dry_run(model, bs, image_size):
-    batch = torch.randn(bs, 3, image_size, image_size).to(device)
+def dry_run(model, bs, image_size, num_channels):
+    batch = torch.randn(bs, num_channels, image_size, image_size).to(device)
     out = model(batch)
-    assert out.shape == (bs, 3, image_size, image_size)
+    assert out.shape == (bs, num_channels, image_size, image_size)
     print("[dry_run] passed")
 
 
@@ -157,11 +159,12 @@ def train(model, dataloader):
 
             # pick nosing rate
             t = random.uniform(0.01, 0.99)
+            alpha_t = train_config['diffusion_scheduler'](t)
 
             # run batch through diffusion
             batch = batch.to(device)
             noise = torch.randn(batch.size(), device=batch.device, dtype=batch.dtype).to(device)
-            diffuse_batch = math.sqrt(t) * batch + math.sqrt(1 - t) * noise
+            diffuse_batch = math.sqrt(alpha_t) * batch + math.sqrt(1 - alpha_t) * noise
 
             # forward pass
             noise_pred = model(diffuse_batch)
@@ -186,7 +189,6 @@ def train(model, dataloader):
             'epoch': epoch,
             'loss': epoch_loss / epoch_len,
             'model_state_dict': model.state_dict(),
-            'vocab': vocab,
             'scheduler_state_dict': scheduler.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'train_config': train_config,
@@ -206,15 +208,15 @@ main
 def main():
     # create dataset
     dataset = ImageDataset(
-        dataset_name="Donghyun99/Stanford-Cars",
+        dataset_name="p2pfl/MNIST",
         max_examples=train_config['max_examples'],
         image_size=train_config['image_size'],
         bs=train_config['bs']
     )
 
     # create diffusion model
-    model = ConvolutionalUNet().to(device)
-    dry_run(model, train_config['bs'], train_config['image_size'])
+    model = ConvolutionalUNet(num_channels=train_config['num_channels']).to(device)
+    dry_run(model, train_config['bs'], train_config['image_size'], train_config['num_channels'])
 
     # enter training cycle
     train(model, dataset.create_dataloader())

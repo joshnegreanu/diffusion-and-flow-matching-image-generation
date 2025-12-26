@@ -26,11 +26,11 @@ class ConvolutionalUNet(nn.Module):
 		encoder/decoder model. Uses convolutional layers and
 		skip connections for per-pixel predictions.
 	"""
-	def __init__(self):
+	def __init__(self, num_channels=3):
 		super().__init__()
             
 		# encoder path
-		self.enc_conv1 = self.double_conv(3, 64)
+		self.enc_conv1 = self.double_conv(num_channels, 64)
 		self.enc_conv2 = self.double_conv(64, 128)
 		self.enc_conv3 = self.double_conv(128, 256)
 		self.enc_conv4 = self.double_conv(256, 512)
@@ -53,7 +53,7 @@ class ConvolutionalUNet(nn.Module):
 		self.dec_conv4 = self.double_conv(128, 64)
         
 		# output layer
-		self.final_conv = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1, stride=1)
+		self.final_conv = nn.Conv2d(in_channels=64, out_channels=num_channels, kernel_size=1, stride=1)
 		
 	
 	"""
@@ -91,11 +91,11 @@ class ConvolutionalUNet(nn.Module):
 	"""
 	def forward(self, x):
 		# encoder path
-		enc1 = self.enc_conv1(x) # 256x256
-		enc2 = self.enc_conv2(self.maxpool(enc1)) # 128x128
-		enc3 = self.enc_conv3(self.maxpool(enc2)) # 64x64
-		enc4 = self.enc_conv4(self.maxpool(enc3)) # 32x32
-		bottleneck = self.enc_conv5(self.maxpool(enc4)) # 16x16
+		enc1 = self.enc_conv1(x) # 32x32
+		enc2 = self.enc_conv2(self.maxpool(enc1)) # 32x32
+		enc3 = self.enc_conv3(self.maxpool(enc2)) # 16x16
+		enc4 = self.enc_conv4(self.maxpool(enc3)) # 8x8
+		bottleneck = self.enc_conv5(self.maxpool(enc4)) # 4x4
 		
 		# decoder path with skip connections
 		up1 = self.up_conv1(bottleneck)
